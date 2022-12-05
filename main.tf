@@ -4,15 +4,44 @@ terraform {
       source = "hashicorp/aws"
       version = "4.45.0"
     }
+    # namecheap = {
+    #   source = "namecheap/namecheap"
+    #   version = ">= 2.0.0"
+    # }
   }
 }
 
+
+# Define the default provider (no alias defined):
+provider "aws" {
+  region = "eu-west-2"
+}
+
+# "To use ACM cert with CF, the cert needs to be in 'us-east-1' region" 
+# https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html#https-requirements-certificate-issuer
+provider "aws" {
+  region = "us-east-1"
+  alias = "useast1"
+}
+
+# provider "namecheap" {
+#   user_name = "user"
+#   api_user = "user"
+#   api_key = "key"
+#   client_ip = "123.123.123.123"
+#   use_sandbox = false
+# }
 
 locals {
   or_id = "tf-cf-or"
   project = "cloud-resume-tf"
   mime_types = jsondecode(file("${path.module}/mimes.json"))
+  resume_subdomain = "resume.tf"
+  domain_name = "laripping.com"
 }
+
+
+
 
 resource "aws_s3_bucket" "s3_bucket" {
   bucket = "tf-cloud-resume-laripping"
@@ -23,9 +52,12 @@ resource "aws_s3_bucket" "s3_bucket" {
     Name    = "tf-cloud-resume-laripping"
     project = local.project
   }
+}
 
-  website {
-    index_document = "resume.html"
+resource "aws_s3_bucket_website_configuration" "webconfig" {
+  bucket = aws_s3_bucket.s3_bucket.bucket
+  index_document {
+    suffix = "resume.html"
   }
 }
 
@@ -49,7 +81,6 @@ resource "aws_s3_bucket_object" "frontend_objects" {
 resource "aws_cloudfront_distribution" "cf_distribution" {
   origin {
     domain_name              = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
-    # origin_access_control_id = aws_cloudfront_origin_access_control.default.id
     origin_id                = local.or_id
   }
 
@@ -57,14 +88,9 @@ resource "aws_cloudfront_distribution" "cf_distribution" {
   is_ipv6_enabled     = true
   comment             = "TF-managed CloudFront distribution pointing to TF Cloud Resume S3"
   default_root_object = "resume.html"
+  aliases = [ join(".",[local.resume_subdomain, local.domain_name]) ]
+  price_class = "PriceClass_All"
 
-  # logging_config {
-  #   include_cookies = false
-  #   bucket          = "mylogs.s3.amazonaws.com"
-  #   prefix          = "myprefix"
-  # }
-
-  # aliases = ["mysite.example.com", "yoursite.example.com"]
 
   default_cache_behavior {
     target_origin_id = local.or_id
@@ -75,8 +101,7 @@ resource "aws_cloudfront_distribution" "cf_distribution" {
     viewer_protocol_policy = "redirect-to-https"
 
   }
-
-  price_class = "PriceClass_All"
+ 
 
   restrictions {
     geo_restriction {
@@ -90,7 +115,8 @@ resource "aws_cloudfront_distribution" "cf_distribution" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true   # TODO change after creating yours
+    acm_certificate_arn = aws_acm_certificate.cert.arn
+    ssl_support_method = "sni-only"
   }
 }
 
@@ -113,4 +139,56 @@ resource "aws_cloudfront_cache_policy" "cp" {
       query_string_behavior = "none"
     }
   }
+}
+
+resource "aws_acm_certificate" "cert" {
+  provider = aws.useast1
+  domain_name       = join(".",[local.resume_subdomain, local.domain_name])
+  validation_method = "DNS"
+
+  tags = {
+    project = local.project
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# DAMN YOU NAMECHEAP WITH YOUR GREEDY POLICIES - YOU RUINED EVERYTHING !!!11
+# resource "namecheap_domain_records" "dns_records" {
+#   domain = local.domain_name
+#   mode = "MERGE"
+
+#   record {
+#     hostname = local.resume_subdomain
+#     type = "CNAME"
+#     address = aws_cloudfront_distribution.cf_distribution.domain_name
+#   }
+
+#   record {
+#     hostname = aws_acm_certificate.cert.domain_validation_options.resource_record_name # might need to split(.laripping)[0]
+#     type = "CNAME"
+#     address = aws_acm_certificate.cert.domain_validation_options.resource_record_value
+#   }
+# }
+
+
+resource "aws_dynamodb_table" "db" {
+  name = "VisitorsTF"
+  hash_key = "IP"
+  range_key = "UA"
+  read_capacity = 2
+  write_capacity = 2
+
+  attribute {
+    name = "IP"
+    type = "S"
+  }
+
+  attribute {
+    name = "UA"
+    type = "S"
+  }
+  
 }
