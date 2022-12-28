@@ -40,6 +40,20 @@ resource "aws_cloudfront_distribution" "cf_distribution" {
   }
 }
 
+resource "null_resource" "invalidate_cf_cache" {
+  # Only way to trigger invalidation when the state is changed
+  # see https://stackoverflow.com/a/69797962
+  # ...might introduce requirement for TF AWS user to have cloudfront:create-invalidation perm...
+  provisioner "local-exec" {
+    command = "aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.cf_distribution.id} --paths \"/*\""
+  }
+
+  # ...and this bit seen here https://faun.pub/lets-do-devops-terraform-hacking-s3-and-cloudfront-dependencies-13c8a2af2f20 
+  triggers = {
+    any_s3_object_changed = aws_s3_bucket_object.frontend_objects["assets/js/api.js"].etag
+  }
+}
+
 resource "aws_cloudfront_cache_policy" "cp" {
   name        = "example-policy"
   comment     = "TF-managed Cache Policy for the TF Cloud Resume CF Distribution"

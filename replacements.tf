@@ -10,6 +10,5 @@ resource "null_resource" "replace_api" {
                 "python3 ./replace-api-url.py cloud-resume-frontend/assets/js/api.js ", 
                 aws_api_gateway_deployment.api_depl.invoke_url
             ])
-            # TODO we also need a CF invalidation here...
   }
 }

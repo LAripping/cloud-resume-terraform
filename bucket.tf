@@ -33,6 +33,8 @@ resource "aws_s3_bucket_object" "frontend_objects" {
   source = "cloud-resume-frontend/${each.value}"
   content_type = lookup(local.mime_types, regex("\\.[^.]+$", each.value), null)
 
+  etag   = "${filemd5("cloud-resume-frontend/${each.value}")}"
+
   # force a sync (re-upload) of frontend files when the API changes
   # ...as the provisioner must be re-run to replace the API URL in api.js 
   depends_on = [ 
