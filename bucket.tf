@@ -26,9 +26,19 @@ resource "aws_s3_bucket_ownership_controls" "oo" {
   }
 }
 
+# hack to exclude .git from cloud-resume-frontend/
+# https://riferrei.com/excluding-files-from-a-list-in-terraform/
+locals {
+  frontend_files_all = fileset("cloud-resume-frontend/", "**")
+  frontend_files = toset([
+    for ff in local.frontend_files_all:
+      ff if !startswith(ff,".git")
+  ])
+}
+
 resource "aws_s3_bucket_object" "frontend_objects" {
   bucket = aws_s3_bucket.s3_bucket.id
-  for_each = fileset("cloud-resume-frontend/", "**")
+  for_each = local.frontend_files
   key = each.value
   source = "cloud-resume-frontend/${each.value}"
   content_type = lookup(local.mime_types, regex("\\.[^.]+$", each.value), null)

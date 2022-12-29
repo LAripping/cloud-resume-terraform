@@ -20,8 +20,10 @@ resource "aws_api_gateway_integration" "api_int" {
   resource_id = aws_api_gateway_resource.api_res.id
   rest_api_id = aws_api_gateway_rest_api.api.id
   type        = "AWS_PROXY"
-  integration_http_method = "GET"
   uri         = aws_lambda_function.lambda.invoke_arn
+  # this is NOT the REST API's listening method
+  # see "http_method" arg and https://stackoverflow.com/a/41389858
+  integration_http_method = "POST"
 }
 
 resource "aws_api_gateway_deployment" "api_depl" {

@@ -19,20 +19,28 @@ resource "aws_lambda_function" "lambda" {
   filename      = "fetch_visitors.zip"
   function_name = "fetch_visitors"
   role          = aws_iam_role.lambda_role.arn
-  handler       = "lambda.lambda_handler"
+  handler       = "app.lambda_handler"
   runtime       = "python3.8"
 
   source_code_hash = data.archive_file.lambda_archive.output_base64sha256
 
   environment {
       variables = {
-        APP_URL     = join("",[
+        API_URL     = join("",[
           "https://",
           local.resume_subdomain,
+          ".",
           local.domain_name]),
         TABLE_NAME  = aws_dynamodb_table.db.name
       }
     }
+}
+
+resource "aws_cloudwatch_log_group" "lambda_log_group" {
+  name              = "/aws/lambda/${aws_lambda_function.lambda.function_name}"
+  # lifecycle {
+  #   prevent_destroy = false
+  # }
 }
 
 # policy allowing the API Gateway to execute the Lambda function
