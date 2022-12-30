@@ -1,0 +1,23 @@
+on:
+  repository_dispatch
+    
+jobs:
+  tf-build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Investigate signal source
+        env:
+          REPO: ${{ github.event.client_payload.source }}
+        run: echo "TF Build triggered by an update to the $REPO code
+      
+      - name: Setup TF 
+        uses: hashicorp/setup-terraform@v2
+        # with: TODO AWS creds (for an IAM role this time)
+
+      - name: TF Init
+        run: terraform init
+
+      - name: TF Apply
+        run: terraform apply
+
+      
