@@ -1,0 +1,8 @@
+[submodule "cloud-resume-backend"]
+	path = cloud-resume-backend
+	url = git@github.com:LAripping/cloud-resume-backend.git
+	branch = terraform
+[submodule "cloud-resume-frontend"]
+	path = cloud-resume-frontend
+	url = git@github.com:LAripping/cloud-resume-frontend.git
+	branch = terraform

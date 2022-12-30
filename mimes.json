@@ -2,5 +2,6 @@
     ".html": "text/html",
     ".js":"application/javacsript",
     ".css": "text/css",
-    ".png": "image/png"
+    ".png": "image/png",
+    ".svg": "image/svg+xml"
 }
