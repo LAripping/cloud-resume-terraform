@@ -5,7 +5,9 @@ The pure-TF website can be found under https://resume.tf.laripping.com/
 
 This repo bundles the frontend and backend repos as submodules, so that Terraform can make modifications locally and push it to the deployed AWS resources. 
 
-## Build
+A [Github Action](.github/workflows/tf-deploy.yml) has been written to automate TF deployment, triggered by changes to the submodules.  Alternatively, to build locally follow the instructions below
+
+## Manual Build
  
 1. `git clone --recurse-submodules https://github.com/laripping/cloud-resume-terraform`
 2. Assuming an authenticated AWS CLI (e.g. by means of an `~/.aws/credentials` profile)
