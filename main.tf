@@ -13,6 +13,12 @@ terraform {
       version = "~> 2.2.0"
     }
   }
+
+  backend "s3" {
+    bucket = "tf-remote-state-manual"
+    key    = "crc-terraform.tfstate"
+    region = "eu-west-2"
+  }
 }
 
 
