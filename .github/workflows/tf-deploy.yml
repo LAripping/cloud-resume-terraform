@@ -12,6 +12,8 @@ jobs:
       
       - name: Checkout the latest version of the TF code into the runner's fs
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Configure AWS credentials for TF cli
         uses: aws-actions/configure-aws-credentials@v1
